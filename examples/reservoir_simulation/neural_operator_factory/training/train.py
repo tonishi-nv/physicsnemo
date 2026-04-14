@@ -167,7 +167,71 @@ from data.validation import (  # noqa: E402
 from utils.co2_normalization import dnorm_dP  # noqa: E402
 
 from physicsnemo.distributed import DistributedManager  # noqa: E402
-from physicsnemo.launch.logging import LaunchLogger, PythonLogger  # noqa: E402
+import logging as _logging  # noqa: E402
+
+
+class PythonLogger:
+    """Minimal replacement for physicsnemo.launch.logging.PythonLogger."""
+
+    def __init__(self, name="nof"):
+        self._log = _logging.getLogger(name)
+        if not self._log.handlers:
+            handler = _logging.StreamHandler()
+            handler.setFormatter(
+                _logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+            )
+            self._log.addHandler(handler)
+        self._log.setLevel(_logging.INFO)
+
+    def file_logging(self, *args, **kwargs):
+        """No-op: file logging not needed in this shim."""
+
+    def info(self, msg, *args, **kwargs):
+        """Log an info-level message."""
+        self._log.info(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        """Log a warning-level message."""
+        self._log.warning(msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        """Log an error-level message."""
+        self._log.error(msg, *args, **kwargs)
+
+    def success(self, msg, *args, **kwargs):
+        """Log a success message (mapped to info level)."""
+        self._log.info(msg, *args, **kwargs)
+
+
+class _LaunchLogCtx:
+    """Context object returned by LaunchLogger.__enter__."""
+
+    def log_epoch(self, metrics: dict):
+        """Emit per-epoch metrics to the nof.epoch logger."""
+        for k, v in metrics.items():
+            _logging.getLogger("nof.epoch").info("%s = %s", k, v)
+
+
+class LaunchLogger:
+    """Minimal replacement for physicsnemo.launch.logging.LaunchLogger."""
+
+    def __init__(self, tag="", epoch=None, num_mini_batch=None, **kwargs):
+        """Initialize the logger shim (tag and epoch stored for context)."""
+        self._tag = tag
+        self._epoch = epoch
+
+    @staticmethod
+    def initialize(*args, **kwargs):
+        """No-op: initialization not needed in this shim."""
+
+    def __enter__(self):
+        """Return the epoch logging context."""
+        return _LaunchLogCtx()
+
+    def __exit__(self, *args):
+        """No-op context exit."""
+
+
 from training.ar_utils import (  # noqa: E402
     ar_validate_full_rollout,
     compute_unroll_steps,
@@ -1252,6 +1316,14 @@ def main(cfg: DictConfig) -> None:
             logger.info(
                 f"Best validation: Loss = {best_val_loss:.6f} | {metric_name} = {best_val_mre:.6f}"
             )
+
+        # ── Structured metrics block (machine-parseable) ──────────────────────
+        # Parsed by NOFTrainer._parse_metrics() — keep format stable.
+        print("---")
+        print(f"val_loss:  {best_val_loss:.6f}")
+        print(f"{metric_key}:  {best_val_mre:.6f}")
+        print(f"epochs:    {total_epochs}")
+        print("---", flush=True)
 
     # End MLFlow run (only on rank 0)
     if cfg.logging.use_mlflow and dist.rank == 0:

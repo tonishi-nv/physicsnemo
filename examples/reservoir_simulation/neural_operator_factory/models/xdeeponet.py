@@ -33,19 +33,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
-from physicsnemo.models.module import Module
+from physicsnemo.core.module import Module
 from torch import Tensor
 from utils.padding import compute_right_pad_to_multiple, pad_spatial_right
 
 from models.physicsnemo_unet import PhysicsNemoUNet2D, PhysicsNemoUNet3D
 from models.unet import UNet2D, UNet3D
-from physicsnemo.models.layers import (
-    Conv2dFCLayer,
-    Conv3dFCLayer,
-    SpectralConv2d,
-    SpectralConv3d,
-    get_activation,
-)
+from physicsnemo.nn.module.spectral_layers import SpectralConv2d, SpectralConv3d
+from physicsnemo.nn.module.fully_connected_layers import Conv2dFCLayer, Conv3dFCLayer
+from physicsnemo.nn.module.activations import get_activation
 from physicsnemo.models.mlp import FullyConnected
 
 # =============================================================================

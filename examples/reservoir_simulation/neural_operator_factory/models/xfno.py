@@ -25,7 +25,7 @@ Reference:
 
 import torch
 import torch.nn as nn
-from physicsnemo.models.module import Module
+from physicsnemo.core.module import Module
 from torch import Tensor
 from utils.padding import (
     compute_right_pad_to_multiple,
@@ -35,14 +35,13 @@ from utils.padding import (
 
 from models.physicsnemo_unet import PhysicsNemoUNet3D
 from models.unet import UNet3D
-from physicsnemo.models.layers import (
+from physicsnemo.nn.module.spectral_layers import SpectralConv3d, SpectralConv4d
+from physicsnemo.nn.module.fully_connected_layers import (
     Conv3dFCLayer,
     ConvNdFCLayer,
     ConvNdKernel1Layer,
-    SpectralConv3d,
-    SpectralConv4d,
-    get_activation,
 )
+from physicsnemo.nn.module.activations import get_activation
 from physicsnemo.models.mlp import FullyConnected
 
 
